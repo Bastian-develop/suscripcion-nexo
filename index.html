@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Suscríbete | Nexo</title>
+  <title>Inscríbete | Nexo</title>
+  <link rel="icon" href="check-animado.gif">
 
   <!-- SDK de EmailJS (navegador) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -11,206 +12,450 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --crema: #f4e7d4;
+      --lavanda: #c9c3dd;
+      --azul: #5664d6;
+      --azul-claro: #a9b2ff;
+      --azul-oscuro: #1c2163;
+      --negro: #07070f;
+      --verde: #8ef0c4;
+    }
+
     body {
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #07070f;
+      background: var(--negro);
       padding: 16px;
+      overflow: hidden;
     }
+
+    /* ===== Fondo: partículas (canvas) ===== */
+    #particulas { position: fixed; inset: 0; z-index: 0; }
+
+    /* ===== Espectro / aurora animada de fondo ===== */
+    @property --giro { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+
+    .espectro {
+      position: fixed; inset: -25%; z-index: 0; pointer-events: none;
+      background: conic-gradient(from var(--giro) at 50% 55%,
+        #5664d6, #7d3cff, #ff5ac8, #ffb36b, #f4e7d4, #36d6c3, #3aa0ff, #5664d6);
+      filter: blur(90px) saturate(150%);
+      opacity: .55;
+      -webkit-mask-image: radial-gradient(ellipse 45% 50% at 50% 55%, #000 30%, transparent 75%);
+      mask-image: radial-gradient(ellipse 45% 50% at 50% 55%, #000 30%, transparent 75%);
+      animation: girarEspectro 18s linear infinite, respirar 6s ease-in-out infinite;
+    }
+    @keyframes girarEspectro { to { --giro: 360deg; } }
+    @keyframes respirar { 0%,100% { opacity: .45; transform: scale(1); } 50% { opacity: .7; transform: scale(1.08); } }
+
+    /* Cortinas de luz tipo aurora boreal */
+    .aurora {
+      position: fixed; left: -20%; right: -20%; height: 60vh; z-index: 0; pointer-events: none;
+      background: linear-gradient(100deg,
+        transparent 15%, rgba(86,100,214,.55) 28%, rgba(54,214,195,.45) 38%,
+        rgba(255,90,200,.4) 48%, rgba(244,231,212,.3) 56%, transparent 70%);
+      background-size: 250% 100%;
+      filter: blur(60px);
+      animation: ondular 16s ease-in-out infinite alternate;
+    }
+    .aurora.a1 { top: -15vh; transform: skewY(-8deg); }
+    .aurora.a2 { bottom: -20vh; transform: skewY(6deg) scaleX(-1); opacity: .7; animation-duration: 22s; animation-delay: -6s; }
+    @keyframes ondular { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+
+    /* ===== Tarjeta con inclinación 3D ===== */
+    .escena {
+      position: relative; z-index: 1; width: 100%; max-width: 440px;
+      transform-style: preserve-3d; transition: transform .15s ease-out;
+    }
+
+    /* Cubo 3D flotando sobre la tarjeta */
+    /* El marco NO crea contexto de apilamiento, así el "screen" se mezcla con el fondo real */
+    .marco { position: relative; width: 100%; max-width: 440px; margin-top: 110px; }
+    .cubo {
+      position: absolute; left: 50%; top: -128px; width: 280px; z-index: 3;
+      -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+      mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+      transform: translateX(-50%);
+      mix-blend-mode: screen;           /* el fondo negro de la imagen se vuelve transparente */
+      pointer-events: none;
+      animation: levitar 5s ease-in-out infinite;
+    }
+    @keyframes levitar {
+      0%,100% { transform: translateX(-50%) translateY(0) rotate(-3deg); }
+      50%     { transform: translateX(-50%) translateY(-18px) rotate(3deg); }
+    }
+    .card { padding-top: 70px !important; }
+
+    /* Borde brillante que gira alrededor de la tarjeta */
+    .escena::before {
+      content: ""; position: absolute; inset: -2px; border-radius: 30px; z-index: 0;
+      background: conic-gradient(from var(--angulo), transparent 65%, var(--azul-claro), var(--crema), transparent);
+      animation: girar 4s linear infinite;
+    }
+    @property --angulo { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+    @keyframes girar { to { --angulo: 360deg; } }
 
     .card {
-      width: 100%;
-      max-width: 440px;
+      position: relative; z-index: 1;
       border-radius: 28px;
-      padding: 40px 32px 44px;
+      padding: 40px 32px 40px;
       text-align: center;
-      background: linear-gradient(180deg, #f4e7d4 0%, #c9c3dd 20%, #5664d6 50%, #1c2163 76%, #0d0d1a 100%);
-      box-shadow: 0 40px 80px -30px rgba(86, 100, 214, 0.45);
+      background: linear-gradient(180deg, var(--crema) 0%, var(--lavanda) 20%, var(--azul) 50%, var(--azul-oscuro) 76%, #0d0d1a 100%);
+      background-size: 100% 160%;
+      box-shadow: 0 40px 90px -30px rgba(86,100,214,.6);
+      animation: degradado 8s ease-in-out infinite alternate;
+      overflow: hidden;
+    }
+    .escena { animation: entrada 1s cubic-bezier(.2,.9,.3,1.2) both; }
+    .escena.inclinable { animation: none; }
+    @keyframes entrada { from { opacity: 0; transform: translateY(60px) rotateX(18deg) scale(.92); } to { opacity: 1; transform: none; } }
+    @keyframes degradado { from { background-position: 0% 0%; } to { background-position: 0% 100%; } }
+
+    /* Reflejo que sigue al mouse */
+    .reflejo {
+      position: absolute; inset: 0; pointer-events: none; border-radius: 28px;
+      background: radial-gradient(circle at var(--mx,50%) var(--my,0%), rgba(255,255,255,.28), transparent 45%);
+      mix-blend-mode: overlay;
     }
 
-    .logo { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 70px; }
+    .contenido > * { animation: aparecer .8s ease-out both; }
+    .contenido > :nth-child(1) { animation-delay: .4s; }
+    .contenido > :nth-child(2) { animation-delay: .55s; }
+    .contenido > :nth-child(3) { animation-delay: .7s; }
+    .contenido > :nth-child(4) { animation-delay: .85s; }
+    .contenido > :nth-child(n+5) { animation-delay: 1s; }
+    @keyframes aparecer { from { opacity: 0; transform: translateY(20px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 
-    .kicker { font-size: 17px; color: #e6e8ff; margin-bottom: 14px; }
+    /* Logo con latido */
+    .logo { display: inline-flex; align-items: center; gap: 10px; color: var(--azul-oscuro); font-weight: 700; font-size: 20px; letter-spacing: 1px; margin-bottom: 56px; }
+    .logo span {
+      width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px;
+      background: var(--azul); color: #fff; font-size: 18px;
+      animation: latido 2.4s ease-in-out infinite;
+    }
+    @keyframes latido { 0%,100% { box-shadow: 0 0 0 0 rgba(169,178,255,.7); } 50% { box-shadow: 0 0 0 12px rgba(169,178,255,0); } }
 
+    .kicker { font-size: 13px; font-weight: 700; color: var(--azul-oscuro); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+
+    /* Título con palabra que cambia (efecto máquina de escribir) */
     h1 {
-      font-size: 52px;
-      line-height: 1.02;
-      font-weight: 300;
-      letter-spacing: -1px;
-      color: #eef0ff;
-      margin-bottom: 70px;
+      font-size: 50px; line-height: 1.05; font-weight: 300; letter-spacing: -1px; color: #eef0ff;
+      margin-bottom: 52px; min-height: 106px;
     }
+    #palabra {
+      font-weight: 600;
+      background: linear-gradient(90deg, #ffffff, var(--azul-claro), #ffffff);
+      background-size: 200% 100%;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      animation: shimmer 3s linear infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .cursor { display: inline-block; width: 3px; height: .9em; background: #fff; margin-left: 4px; vertical-align: -4px; animation: parpadeo .8s steps(1) infinite; }
+    @keyframes parpadeo { 50% { opacity: 0; } }
 
-    p.sub { color: #ffffff; font-size: 15px; margin-bottom: 22px; line-height: 1.6; }
+    p.sub { color: #fff; font-size: 15px; margin-bottom: 22px; line-height: 1.6; }
 
     form { display: flex; flex-direction: column; gap: 12px; }
 
+    .campo { position: relative; }
     input[type="email"] {
-      width: 100%;
-      padding: 15px 20px;
-      font-size: 15px;
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50px;
-      outline: none;
-      transition: border-color .2s, background .2s;
+      width: 100%; padding: 16px 20px; font-size: 15px; color: #fff;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 50px; outline: none;
+      transition: border-color .25s, background .25s, box-shadow .25s, transform .25s;
     }
-    input[type="email"]::placeholder { color: #a6a9c7; }
-    input[type="email"]:focus { border-color: #a9b2ff; background: rgba(255, 255, 255, 0.12); }
+    input[type="email"]::placeholder { color: #b5b8d6; }
+    input[type="email"]:focus {
+      border-color: var(--azul-claro); background: rgba(255,255,255,.14);
+      box-shadow: 0 0 0 4px rgba(169,178,255,.25), 0 0 30px rgba(169,178,255,.35);
+      transform: scale(1.02);
+    }
+    input.error { animation: sacudir .4s; border-color: #ff9a9a; }
+    @keyframes sacudir { 20%,60% { transform: translateX(-9px); } 40%,80% { transform: translateX(9px); } }
 
     button {
-      padding: 15px;
-      font-size: 15px;
-      color: #ffffff;
-      background: #2e3683;
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: background .2s, transform .15s;
+      position: relative; overflow: hidden;
+      padding: 16px; font-size: 16px; font-weight: 700; color: #fff;
+      background: linear-gradient(90deg, var(--azul-oscuro), var(--azul), var(--azul-oscuro));
+      background-size: 200% 100%;
+      border: none; border-radius: 50px; cursor: pointer;
+      transition: transform .2s, box-shadow .2s, background-position .6s;
+      box-shadow: 0 12px 30px -10px rgba(86,100,214,.8);
     }
-    button:hover { background: #3a44a3; transform: translateY(-1px); }
-    button:disabled { background: #4a4c66; transform: none; cursor: not-allowed; }
-
-    .msg { margin-top: 16px; font-size: 14px; min-height: 20px; }
-    .msg.ok { color: #8ef0c4; }
-    .msg.error { color: #ff9a9a; }
-
-    .legal { margin-top: 6px; font-size: 12px; color: #7a7c93; }
-
-    /* ===== ANIMACIONES ===== */
-    @keyframes aparecer { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
-    @keyframes flotar   { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-40px) scale(1.15); } }
-    @keyframes degradado{ 0% { background-position: 0% 0%; } 100% { background-position: 0% 100%; } }
-    @keyframes brillo   { from { left: -60%; } to { left: 130%; } }
-    @keyframes sacudir  { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-    @keyframes pop      { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
-
-    /* Luces de fondo que flotan */
-    body::before, body::after {
-      content: ""; position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1;
-      animation: flotar 9s ease-in-out infinite;
-    }
-    body::before { width: 340px; height: 340px; background: #3b48b8; top: 8%; left: 10%; opacity: .45; }
-    body::after  { width: 280px; height: 280px; background: #f4e7d4; bottom: 6%; right: 8%; opacity: .18; animation-delay: -4s; }
-
-    .card {
-      background-size: 100% 150%;
-      animation: aparecer .8s ease-out both, degradado 7s ease-in-out infinite alternate;
-    }
-    .card > * { animation: aparecer .7s ease-out both; }
-    .card > :nth-child(1) { animation-delay: .2s; }
-    .card > :nth-child(2) { animation-delay: .35s; }
-    .card > :nth-child(3) { animation-delay: .5s; }
-    .card > :nth-child(4) { animation-delay: .65s; }
-    .card > :nth-child(5) { animation-delay: .8s; }
-    .card > :nth-child(n+6) { animation-delay: .95s; }
-
-    /* Destello que recorre el botón */
-    button { position: relative; overflow: hidden; }
+    button:hover { transform: translateY(-3px) scale(1.02); background-position: 100% 0; box-shadow: 0 18px 40px -10px rgba(86,100,214,1); }
+    button:active { transform: scale(.97); }
     button::after {
       content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
-      transform: skewX(-20deg);
-      animation: brillo 2.8s ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+      transform: skewX(-20deg); animation: destello 2.8s ease-in-out infinite;
     }
+    @keyframes destello { from { left: -60%; } to { left: 130%; } }
+    button:disabled { cursor: wait; }
+    .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: rotar .7s linear infinite; vertical-align: -3px; margin-right: 8px; }
+    button.cargando .spinner { display: inline-block; }
+    @keyframes rotar { to { transform: rotate(360deg); } }
 
-    input.error { animation: sacudir .35s; border-color: #ff9a9a; }
-    .msg.ok { animation: pop .5s ease-out; }
+    .msg { margin-top: 14px; font-size: 14px; min-height: 20px; color: #ff9a9a; }
+    .legal { margin-top: 4px; font-size: 12px; color: #9a9cb8; }
 
+    /* ===== Pantalla de éxito ===== */
+    .exito { display: none; padding: 30px 0 10px; }
+    .card.listo .contenido { display: none; }
+    .card.listo .exito { display: block; animation: aparecer .6s ease-out both; }
+
+    .check { width: 110px; height: 110px; margin: 0 auto 26px; }
+    .check circle { stroke: var(--verde); stroke-width: 4; fill: rgba(142,240,196,.12); stroke-dasharray: 320; stroke-dashoffset: 320; animation: trazar .8s ease-out .1s forwards; }
+    .check path { stroke: #fff; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 80; stroke-dashoffset: 80; animation: trazar .5s ease-out .8s forwards; }
+    @keyframes trazar { to { stroke-dashoffset: 0; } }
+
+    .exito h2 { font-size: 40px; font-weight: 300; color: #eef0ff; margin-bottom: 12px; }
+    .exito p { color: #fff; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    .exito strong { color: var(--verde); }
+    .exito button { width: 100%; }
+
+    #confeti { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 40px; min-height: 86px; }
+      .card { padding: 60px 22px 32px !important; }
+      .cubo { width: 230px; top: -115px; }
+      .marco { margin-top: 70px; }
+    }
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation: none !important; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <main class="card">
-    <div class="logo">Nexo</div>
-    <p class="kicker">Regístrate gratis</p>
-    <h1>Inscríbete<br>en el sitio</h1>
+  <canvas id="particulas"></canvas>
+  <div class="espectro"></div>
+  <div class="aurora a1"></div>
+  <div class="aurora a2"></div>
+  <canvas id="confeti"></canvas>
 
-    <p class="sub">Escribe tu correo y te enviaremos la confirmación de tu inscripción.</p>
+  <div class="marco">
+  <img class="cubo" src="cubo.png" alt="">
+  <div class="escena">
+    <main class="card" id="tarjeta">
+      <div class="reflejo"></div>
 
-    <form id="form-suscripcion" novalidate>
-      <!-- El "name" debe coincidir con la variable {{user_email}} de la plantilla -->
-      <input
-        type="email"
-        id="user_email"
-        name="user_email"
-        placeholder="tucorreo@ejemplo.com"
-        required
-      >
-      <!-- Campo oculto: se llena con la fecha al enviar → variable {{fecha}} -->
-      <input type="hidden" name="fecha" id="fecha">
-      <button type="submit" id="btn-enviar">Inscribirme</button>
-    </form>
+      <!-- Formulario -->
+      <div class="contenido">
+        <div class="logo"><span>N</span>Nexo</div>
+        <p class="kicker">Regístrate gratis</p>
+        <h1>Inscríbete y<br><span id="palabra">aprende</span><span class="cursor"></span></h1>
+        <p class="sub">Escribe tu correo y te enviaremos la confirmación de tu inscripción.</p>
 
-    <div id="mensaje" class="msg"></div>
-    <p class="legal">Puedes darte de baja cuando quieras.</p>
-  </main>
+        <form id="form-suscripcion" novalidate>
+          <div class="campo">
+            <!-- El "name" debe coincidir con la variable {{user_email}} de la plantilla -->
+            <input type="email" id="user_email" name="user_email" placeholder="tucorreo@ejemplo.com" required>
+          </div>
+          <!-- Campo oculto: se llena con la fecha al enviar → variable {{fecha}} -->
+          <input type="hidden" name="fecha" id="fecha">
+          <button type="submit" id="btn-enviar"><span class="spinner"></span><span id="btn-texto">Inscribirme</span></button>
+        </form>
+
+        <div id="mensaje" class="msg"></div>
+        <p class="legal">Puedes darte de baja cuando quieras.</p>
+      </div>
+
+      <!-- Pantalla de éxito -->
+      <div class="exito">
+        <svg class="check" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="50"/>
+          <path d="M33 57 L48 72 L78 40"/>
+        </svg>
+        <h2>¡Listo!</h2>
+        <p>Te enviamos la confirmación a<br><strong id="correo-enviado"></strong><br>Revisa tu bandeja de entrada (y spam).</p>
+        <button type="button" id="btn-otro">Inscribir otro correo</button>
+      </div>
+    </main>
+  </div>
+  </div>
 
   <script>
-    // ===== 1. CONFIGURA TUS CREDENCIALES DE EMAILJS =====
-    const PUBLIC_KEY  = "6Q14AX848C5kM_Opm";   // Account > General > Public Key
-    const SERVICE_ID  = "service_dlhtlap";   // Email Services > (tu servicio) > Service ID
-    const TEMPLATE_ID = "template_w1cbpml";  // Email Templates > (tu plantilla) > Template ID
+    // ===== 1. CREDENCIALES DE EMAILJS =====
+    const PUBLIC_KEY  = "6Q14AX848C5kM_Opm";  // Account > General > Public Key
+    const SERVICE_ID  = "service_dlhtlap";    // Email Services > Service ID
+    const TEMPLATE_ID = "template_w1cbpml";   // Email Templates > Template ID
 
     emailjs.init({ publicKey: PUBLIC_KEY });
 
-    // ===== 2. LÓGICA DEL FORMULARIO =====
+    const reducirMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ===== 2. FONDO DE PARTÍCULAS CONECTADAS =====
+    (function () {
+      const c = document.getElementById("particulas");
+      const ctx = c.getContext("2d");
+      let w, h, puntos = [];
+      const raton = { x: -999, y: -999 };
+
+      function redimensionar() {
+        w = c.width = innerWidth; h = c.height = innerHeight;
+        const n = Math.min(90, Math.floor((w * h) / 16000));
+        puntos = Array.from({ length: n }, () => ({
+          x: Math.random() * w, y: Math.random() * h,
+          vx: (Math.random() - .5) * .5, vy: (Math.random() - .5) * .5,
+          r: Math.random() * 1.8 + .6
+        }));
+      }
+      addEventListener("resize", redimensionar);
+      addEventListener("mousemove", e => { raton.x = e.clientX; raton.y = e.clientY; });
+      redimensionar();
+
+      function dibujar() {
+        ctx.clearRect(0, 0, w, h);
+        for (const p of puntos) {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > w) p.vx *= -1;
+          if (p.y < 0 || p.y > h) p.vy *= -1;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(169,178,255,.8)"; ctx.fill();
+        }
+        for (let i = 0; i < puntos.length; i++) {
+          for (let j = i + 1; j < puntos.length; j++) {
+            const a = puntos[i], b = puntos[j];
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d < 120) {
+              ctx.strokeStyle = `rgba(169,178,255,${.18 * (1 - d / 120)})`;
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            }
+          }
+          const dr = Math.hypot(puntos[i].x - raton.x, puntos[i].y - raton.y);
+          if (dr < 160) {
+            ctx.strokeStyle = `rgba(244,231,212,${.4 * (1 - dr / 160)})`;
+            ctx.beginPath(); ctx.moveTo(puntos[i].x, puntos[i].y); ctx.lineTo(raton.x, raton.y); ctx.stroke();
+          }
+        }
+        requestAnimationFrame(dibujar);
+      }
+      if (!reducirMovimiento) dibujar();
+    })();
+
+    // ===== 3. TARJETA 3D QUE SIGUE AL MOUSE =====
+    const tarjeta = document.getElementById("tarjeta");
+    const escena  = document.querySelector(".escena");
+    // Cuando termina la animación de entrada, se libera la tarjeta para inclinarla
+    escena.addEventListener("animationend", e => {
+      if (e.animationName === "entrada") escena.classList.add("inclinable");
+    });
+    if (!reducirMovimiento && matchMedia("(hover: hover)").matches) {
+      addEventListener("mousemove", e => {
+        if (!escena.classList.contains("inclinable")) return;
+        const r = escena.getBoundingClientRect();
+        const x = Math.min(Math.max((e.clientX - r.left) / r.width, -0.5), 1.5);
+        const y = Math.min(Math.max((e.clientY - r.top) / r.height, -0.5), 1.5);
+        escena.style.transform = `perspective(1200px) rotateY(${(x - .5) * 12}deg) rotateX(${(.5 - y) * 12}deg)`;
+        tarjeta.style.setProperty("--mx", `${x * 100}%`);
+        tarjeta.style.setProperty("--my", `${y * 100}%`);
+      });
+      document.addEventListener("mouseleave", () => { escena.style.transform = ""; });
+    }
+
+    // ===== 4. PALABRA QUE SE ESCRIBE Y BORRA =====
+    (function () {
+      const palabras = ["aprende", "crece", "conecta", "innova"];
+      const el = document.getElementById("palabra");
+      let i = 0, letras = palabras[0].length, borrando = true;
+      function paso() {
+        const actual = palabras[i];
+        el.textContent = actual.slice(0, letras);
+        if (borrando) {
+          letras--;
+          if (letras < 0) { borrando = false; i = (i + 1) % palabras.length; letras = 0; }
+          setTimeout(paso, 70);
+        } else {
+          letras++;
+          if (letras > palabras[i].length) { borrando = true; letras = palabras[i].length; setTimeout(paso, 1800); return; }
+          setTimeout(paso, 110);
+        }
+      }
+      if (!reducirMovimiento) setTimeout(paso, 2200);
+    })();
+
+    // ===== 5. CONFETI =====
+    function lanzarConfeti() {
+      if (reducirMovimiento) return;
+      const c = document.getElementById("confeti");
+      const ctx = c.getContext("2d");
+      c.width = innerWidth; c.height = innerHeight;
+      const colores = ["#f4e7d4", "#a9b2ff", "#5664d6", "#8ef0c4", "#ffffff"];
+      const piezas = Array.from({ length: 160 }, () => ({
+        x: innerWidth / 2, y: innerHeight / 2,
+        vx: (Math.random() - .5) * 16, vy: Math.random() * -16 - 4,
+        rot: Math.random() * 360, vr: (Math.random() - .5) * 20,
+        w: Math.random() * 8 + 5, h: Math.random() * 5 + 3,
+        color: colores[Math.floor(Math.random() * colores.length)]
+      }));
+      let cuadros = 0;
+      (function animar() {
+        ctx.clearRect(0, 0, c.width, c.height);
+        for (const p of piezas) {
+          p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+          ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+        }
+        if (++cuadros < 200) requestAnimationFrame(animar);
+        else ctx.clearRect(0, 0, c.width, c.height);
+      })();
+    }
+
+    // ===== 6. ENVÍO DEL FORMULARIO =====
     const form    = document.getElementById("form-suscripcion");
     const input   = document.getElementById("user_email");
     const boton   = document.getElementById("btn-enviar");
+    const textoBtn= document.getElementById("btn-texto");
     const mensaje = document.getElementById("mensaje");
-
-    function mostrarMensaje(texto, tipo) {
-      mensaje.textContent = texto;
-      mensaje.className = "msg " + tipo;
-    }
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-
       const correo = input.value.trim();
-      const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      if (!regexCorreo.test(correo)) {
-        mostrarMensaje("Por favor escribe un correo válido.", "error");
-        input.classList.remove("error");
-        void input.offsetWidth;            // reinicia la animación de sacudida
-        input.classList.add("error");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+        mensaje.textContent = "Por favor escribe un correo válido.";
+        input.classList.remove("error"); void input.offsetWidth; input.classList.add("error");
         input.focus();
         return;
       }
-
       input.classList.remove("error");
+      mensaje.textContent = "";
 
-      // Fecha legible, ej: "9 de noviembre de 2026"
       document.getElementById("fecha").value = new Date().toLocaleDateString("es-CO", {
         day: "numeric", month: "long", year: "numeric"
       });
 
       boton.disabled = true;
-      boton.textContent = "Enviando...";
-      mostrarMensaje("", "");
+      boton.classList.add("cargando");
+      textoBtn.textContent = "Enviando...";
 
       emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, form)
         .then(function () {
-          mostrarMensaje("¡Inscripción exitosa! Te enviamos la confirmación a tu correo (revisa también spam).", "ok");
+          document.getElementById("correo-enviado").textContent = correo;
+          tarjeta.classList.add("listo");
+          lanzarConfeti();
           form.reset();
         })
         .catch(function (error) {
           console.error("Error EmailJS:", error);
-          mostrarMensaje("No se pudo enviar. Intenta de nuevo en un momento.", "error");
+          mensaje.textContent = "No se pudo enviar. Intenta de nuevo en un momento.";
         })
         .finally(function () {
           boton.disabled = false;
-          boton.textContent = "Inscribirme";
+          boton.classList.remove("cargando");
+          textoBtn.textContent = "Inscribirme";
         });
+    });
+
+    document.getElementById("btn-otro").addEventListener("click", function () {
+      tarjeta.classList.remove("listo");
+      input.focus();
     });
   </script>
 
