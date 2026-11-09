@@ -69,7 +69,7 @@
     /* ===== Tarjeta con inclinación 3D ===== */
     .escena {
       position: relative; z-index: 1; width: 100%; max-width: 440px;
-      transform-style: preserve-3d; transition: transform .15s ease-out;
+      transform-style: preserve-3d;
     }
 
     /* Cubo 3D flotando sobre la tarjeta */
@@ -85,8 +85,69 @@
       animation: levitar 5s ease-in-out infinite;
     }
     @keyframes levitar {
-      0%,100% { transform: translateX(-50%) translateY(0) rotate(-3deg); }
-      50%     { transform: translateX(-50%) translateY(-18px) rotate(3deg); }
+      0%,100% { transform: translateX(-50%) translateY(0) rotate(-8deg) scale(1); }
+      50%     { transform: translateX(-50%) translateY(-28px) rotate(8deg) scale(1.06); }
+    }
+    /* Anillos de energía que salen debajo del cubo */
+    .halo {
+      position: absolute; left: 50%; top: -8px; width: 150px; height: 34px; z-index: 2;
+      border: 2px solid var(--azul-claro); border-radius: 50%;
+      transform: translateX(-50%); pointer-events: none; opacity: 0;
+      animation: halo 2.6s ease-out infinite;
+    }
+    .halo.h2 { animation-delay: 1.3s; }
+    @keyframes halo {
+      0%   { opacity: .9; transform: translateX(-50%) scale(.4); }
+      100% { opacity: 0;  transform: translateX(-50%) scale(2.2); }
+    }
+
+    /* Estrellas fugaces */
+    .fugaz {
+      position: fixed; z-index: 0; width: 180px; height: 2px; border-radius: 2px; pointer-events: none;
+      background: linear-gradient(90deg, #fff, rgba(169,178,255,.6), transparent);
+      filter: drop-shadow(0 0 6px #a9b2ff); opacity: 0;
+      animation: fugaz var(--d, 7s) linear infinite; animation-delay: var(--r, 0s);
+    }
+    @keyframes fugaz {
+      0%   { opacity: 0; transform: rotate(-35deg) translateX(0); }
+      3%   { opacity: 1; }
+      18%  { opacity: 0; transform: rotate(-35deg) translateX(-700px); }
+      100% { opacity: 0; transform: rotate(-35deg) translateX(-700px); }
+    }
+
+    /* Burbujas de luz que suben dentro de la tarjeta */
+    .burbujas { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; border-radius: 28px; }
+    .burbujas span {
+      position: absolute; bottom: -20px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.9), rgba(169,178,255,.2) 60%, transparent 70%);
+      animation: subir linear infinite;
+    }
+    @keyframes subir {
+      0%   { transform: translateY(0) translateX(0); opacity: 0; }
+      10%  { opacity: .9; }
+      50%  { transform: translateY(-350px) translateX(18px); }
+      100% { transform: translateY(-720px) translateX(-12px); opacity: 0; }
+    }
+    .contenido, .exito { position: relative; z-index: 1; }
+
+    /* Letras en ola */
+    .kicker span { display: inline-block; animation: ola 2.2s ease-in-out infinite; }
+    @keyframes ola { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); color: var(--azul); } }
+
+    /* Botón con pulso continuo */
+    #btn-enviar { animation: pulsoBtn 2.4s ease-in-out infinite; }
+    @keyframes pulsoBtn {
+      0%,100% { box-shadow: 0 12px 30px -10px rgba(86,100,214,.8), 0 0 0 0 rgba(169,178,255,.5); }
+      50%     { box-shadow: 0 12px 30px -10px rgba(86,100,214,.8), 0 0 0 10px rgba(169,178,255,0); }
+    }
+
+    /* Borde del campo con luz que recorre */
+    .campo::before {
+      content: ""; position: absolute; inset: -1px; border-radius: 50px; padding: 1px; pointer-events: none;
+      background: conic-gradient(from var(--angulo), transparent 75%, #fff, transparent);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      animation: girar 3s linear infinite;
     }
     .card { padding-top: 70px !important; }
 
@@ -239,10 +300,18 @@
   <div class="aurora a2"></div>
   <canvas id="confeti"></canvas>
 
+  <span class="fugaz" style="top:12%; left:85%; --d:7s;  --r:0s"></span>
+  <span class="fugaz" style="top:5%;  left:60%; --d:9s;  --r:2.5s"></span>
+  <span class="fugaz" style="top:30%; left:98%; --d:8s;  --r:5s"></span>
+  <span class="fugaz" style="top:55%; left:95%; --d:11s; --r:7s"></span>
+
   <div class="marco">
+  <div class="halo"></div>
+  <div class="halo h2"></div>
   <img class="cubo" src="cubo.png" alt="">
   <div class="escena">
     <main class="card" id="tarjeta">
+      <div class="burbujas" id="burbujas"></div>
       <div class="reflejo"></div>
 
       <!-- Formulario -->
@@ -339,25 +408,68 @@
       if (!reducirMovimiento) dibujar();
     })();
 
-    // ===== 3. TARJETA 3D QUE SIGUE AL MOUSE =====
+    // ===== 3. TARJETA 3D: SE MUEVE SOLA Y SIGUE AL MOUSE =====
     const tarjeta = document.getElementById("tarjeta");
     const escena  = document.querySelector(".escena");
-    // Cuando termina la animación de entrada, se libera la tarjeta para inclinarla
     escena.addEventListener("animationend", e => {
       if (e.animationName === "entrada") escena.classList.add("inclinable");
     });
-    if (!reducirMovimiento && matchMedia("(hover: hover)").matches) {
-      addEventListener("mousemove", e => {
-        if (!escena.classList.contains("inclinable")) return;
-        const r = escena.getBoundingClientRect();
-        const x = Math.min(Math.max((e.clientX - r.left) / r.width, -0.5), 1.5);
-        const y = Math.min(Math.max((e.clientY - r.top) / r.height, -0.5), 1.5);
-        escena.style.transform = `perspective(1200px) rotateY(${(x - .5) * 12}deg) rotateX(${(.5 - y) * 12}deg)`;
-        tarjeta.style.setProperty("--mx", `${x * 100}%`);
-        tarjeta.style.setProperty("--my", `${y * 100}%`);
-      });
-      document.addEventListener("mouseleave", () => { escena.style.transform = ""; });
+
+    const objetivo = { x: .5, y: .5 }, pos = { x: .5, y: .5 };
+    let ultimoMouse = -99999;
+    addEventListener("mousemove", e => {
+      const r = escena.getBoundingClientRect();
+      objetivo.x = Math.min(Math.max((e.clientX - r.left) / r.width, -0.5), 1.5);
+      objetivo.y = Math.min(Math.max((e.clientY - r.top) / r.height, -0.5), 1.5);
+      ultimoMouse = performance.now();
+    });
+
+    function moverTarjeta(t) {
+      const s = t / 1000;
+      // Sin mouse (o en celular) la tarjeta se balancea sola
+      if (performance.now() - ultimoMouse > 1500) {
+        objetivo.x = .5 + Math.sin(s * .8) * .35;
+        objetivo.y = .5 + Math.cos(s * .6) * .3;
+      }
+      pos.x += (objetivo.x - pos.x) * .06;
+      pos.y += (objetivo.y - pos.y) * .06;
+      if (escena.classList.contains("inclinable")) {
+        const flotar = Math.sin(s * 1.4) * 10;
+        escena.style.transform =
+          `perspective(1200px) translateY(${flotar}px) rotateY(${(pos.x - .5) * 16}deg) rotateX(${(.5 - pos.y) * 14}deg)`;
+      }
+      tarjeta.style.setProperty("--mx", `${pos.x * 100}%`);
+      tarjeta.style.setProperty("--my", `${pos.y * 100}%`);
+      requestAnimationFrame(moverTarjeta);
     }
+    if (!reducirMovimiento) requestAnimationFrame(moverTarjeta);
+
+    // Burbujas de luz dentro de la tarjeta
+    (function () {
+      const cont = document.getElementById("burbujas");
+      for (let i = 0; i < 14; i++) {
+        const b = document.createElement("span");
+        const t = Math.random() * 8 + 4;
+        b.style.left = Math.random() * 100 + "%";
+        b.style.width = b.style.height = t + "px";
+        b.style.animationDuration = (Math.random() * 6 + 7) + "s";
+        b.style.animationDelay = (-Math.random() * 12) + "s";
+        cont.appendChild(b);
+      }
+    })();
+
+    // Letras del subtítulo en ola
+    (function () {
+      const k = document.querySelector(".kicker");
+      const texto = k.textContent;
+      k.textContent = "";
+      [...texto].forEach((c, i) => {
+        const sp = document.createElement("span");
+        sp.textContent = c === " " ? "\u00A0" : c;
+        sp.style.animationDelay = (i * .07) + "s";
+        k.appendChild(sp);
+      });
+    })();
 
     // ===== 4. PALABRA QUE SE ESCRIBE Y BORRA =====
     (function () {
