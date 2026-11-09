@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suscríbete | Nexo</title>
+
+  <!-- SDK de EmailJS (navegador) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #07070f;
+      padding: 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      border-radius: 28px;
+      padding: 40px 32px 44px;
+      text-align: center;
+      background: linear-gradient(180deg, #f4e7d4 0%, #c9c3dd 20%, #5664d6 50%, #1c2163 76%, #0d0d1a 100%);
+      box-shadow: 0 40px 80px -30px rgba(86, 100, 214, 0.45);
+    }
+
+    .logo { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 70px; }
+
+    .kicker { font-size: 17px; color: #e6e8ff; margin-bottom: 14px; }
+
+    h1 {
+      font-size: 52px;
+      line-height: 1.02;
+      font-weight: 300;
+      letter-spacing: -1px;
+      color: #eef0ff;
+      margin-bottom: 70px;
+    }
+
+    p.sub { color: #ffffff; font-size: 15px; margin-bottom: 22px; line-height: 1.6; }
+
+    form { display: flex; flex-direction: column; gap: 12px; }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 15px;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    input[type="email"]::placeholder { color: #a6a9c7; }
+    input[type="email"]:focus { border-color: #a9b2ff; background: rgba(255, 255, 255, 0.12); }
+
+    button {
+      padding: 15px;
+      font-size: 15px;
+      color: #ffffff;
+      background: #2e3683;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    button:hover { background: #3a44a3; transform: translateY(-1px); }
+    button:disabled { background: #4a4c66; transform: none; cursor: not-allowed; }
+
+    .msg { margin-top: 16px; font-size: 14px; min-height: 20px; }
+    .msg.ok { color: #8ef0c4; }
+    .msg.error { color: #ff9a9a; }
+
+    .legal { margin-top: 6px; font-size: 12px; color: #7a7c93; }
+
+    /* ===== ANIMACIONES ===== */
+    @keyframes aparecer { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+    @keyframes flotar   { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-40px) scale(1.15); } }
+    @keyframes degradado{ 0% { background-position: 0% 0%; } 100% { background-position: 0% 100%; } }
+    @keyframes brillo   { from { left: -60%; } to { left: 130%; } }
+    @keyframes sacudir  { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+    @keyframes pop      { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+
+    /* Luces de fondo que flotan */
+    body::before, body::after {
+      content: ""; position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1;
+      animation: flotar 9s ease-in-out infinite;
+    }
+    body::before { width: 340px; height: 340px; background: #3b48b8; top: 8%; left: 10%; opacity: .45; }
+    body::after  { width: 280px; height: 280px; background: #f4e7d4; bottom: 6%; right: 8%; opacity: .18; animation-delay: -4s; }
+
+    .card {
+      background-size: 100% 150%;
+      animation: aparecer .8s ease-out both, degradado 7s ease-in-out infinite alternate;
+    }
+    .card > * { animation: aparecer .7s ease-out both; }
+    .card > :nth-child(1) { animation-delay: .2s; }
+    .card > :nth-child(2) { animation-delay: .35s; }
+    .card > :nth-child(3) { animation-delay: .5s; }
+    .card > :nth-child(4) { animation-delay: .65s; }
+    .card > :nth-child(5) { animation-delay: .8s; }
+    .card > :nth-child(n+6) { animation-delay: .95s; }
+
+    /* Destello que recorre el botón */
+    button { position: relative; overflow: hidden; }
+    button::after {
+      content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+      transform: skewX(-20deg);
+      animation: brillo 2.8s ease-in-out infinite;
+    }
+
+    input.error { animation: sacudir .35s; border-color: #ff9a9a; }
+    .msg.ok { animation: pop .5s ease-out; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="card">
+    <div class="logo">Nexo</div>
+    <p class="kicker">Regístrate gratis</p>
+    <h1>Inscríbete<br>en el sitio</h1>
+
+    <p class="sub">Escribe tu correo y te enviaremos la confirmación de tu inscripción.</p>
+
+    <form id="form-suscripcion" novalidate>
+      <!-- El "name" debe coincidir con la variable {{user_email}} de la plantilla -->
+      <input
+        type="email"
+        id="user_email"
+        name="user_email"
+        placeholder="tucorreo@ejemplo.com"
+        required
+      >
+      <!-- Campo oculto: se llena con la fecha al enviar → variable {{fecha}} -->
+      <input type="hidden" name="fecha" id="fecha">
+      <button type="submit" id="btn-enviar">Inscribirme</button>
+    </form>
+
+    <div id="mensaje" class="msg"></div>
+    <p class="legal">Puedes darte de baja cuando quieras.</p>
+  </main>
+
+  <script>
+    // ===== 1. CONFIGURA TUS CREDENCIALES DE EMAILJS =====
+    const PUBLIC_KEY  = "Uc2NGYRJbU0TpY9_9kC1K";   // Account > General > Public Key
+    const SERVICE_ID  = "service_dlhtlap";   // Email Services > (tu servicio) > Service ID
+    const TEMPLATE_ID = "template_w1cbpml";  // Email Templates > (tu plantilla) > Template ID
+
+    emailjs.init({ publicKey: PUBLIC_KEY });
+
+    // ===== 2. LÓGICA DEL FORMULARIO =====
+    const form    = document.getElementById("form-suscripcion");
+    const input   = document.getElementById("user_email");
+    const boton   = document.getElementById("btn-enviar");
+    const mensaje = document.getElementById("mensaje");
+
+    function mostrarMensaje(texto, tipo) {
+      mensaje.textContent = texto;
+      mensaje.className = "msg " + tipo;
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const correo = input.value.trim();
+      const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!regexCorreo.test(correo)) {
+        mostrarMensaje("Por favor escribe un correo válido.", "error");
+        input.classList.remove("error");
+        void input.offsetWidth;            // reinicia la animación de sacudida
+        input.classList.add("error");
+        input.focus();
+        return;
+      }
+
+      input.classList.remove("error");
+
+      // Fecha legible, ej: "9 de noviembre de 2026"
+      document.getElementById("fecha").value = new Date().toLocaleDateString("es-CO", {
+        day: "numeric", month: "long", year: "numeric"
+      });
+
+      boton.disabled = true;
+      boton.textContent = "Enviando...";
+      mostrarMensaje("", "");
+
+      emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, form)
+        .then(function () {
+          mostrarMensaje("¡Inscripción exitosa! Te enviamos la confirmación a tu correo (revisa también spam).", "ok");
+          form.reset();
+        })
+        .catch(function (error) {
+          console.error("Error EmailJS:", error);
+          mostrarMensaje("No se pudo enviar. Intenta de nuevo en un momento.", "error");
+        })
+        .finally(function () {
+          boton.disabled = false;
+          boton.textContent = "Inscribirme";
+        });
+    });
+  </script>
+
+</body>
+</html>
